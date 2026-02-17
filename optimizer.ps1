@@ -1,10 +1,8 @@
-# Require Administrator
-If (-NOT ([Security.Principal.WindowsPrincipal] 
-[Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(
-[Security.Principal.WindowsBuiltInRole] "Administrator"))
-{
+# Admin Check (Safe Single-Line Version)
+if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    Add-Type -AssemblyName System.Windows.Forms
     [System.Windows.Forms.MessageBox]::Show("Please run PowerShell as Administrator!")
-    Exit
+    exit
 }
 
 Add-Type -AssemblyName System.Windows.Forms
@@ -28,12 +26,6 @@ function Update-Status($msg) {
     $form.Refresh()
 }
 
-function Create-RestorePoint {
-    Update-Status "Creating restore point..."
-    Enable-ComputerRestore -Drive "C:\" -ErrorAction SilentlyContinue
-    Checkpoint-Computer -Description "Before Phantom Optimization" -RestorePointType "MODIFY_SETTINGS"
-}
-
 function Clean-TempFiles {
     Update-Status "Cleaning temp files..."
     Remove-Item "$env:TEMP\*" -Recurse -Force -ErrorAction SilentlyContinue
@@ -49,16 +41,13 @@ function Enable-UltimatePerformance {
 
 function Optimize-VisualEffects {
     Update-Status "Optimizing visual effects..."
-    Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects" `
-    -Name VisualFXSetting -Value 2
+    Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects" -Name VisualFXSetting -Value 2 -ErrorAction SilentlyContinue
 }
 
 function Flush-DNS {
     Update-Status "Flushing DNS..."
     ipconfig /flushdns | Out-Null
 }
-
-# Buttons
 
 $btnOptimize = New-Object System.Windows.Forms.Button
 $btnOptimize.Text = "Run Full Optimization"
@@ -68,7 +57,6 @@ $btnOptimize.BackColor = "#1f6feb"
 $btnOptimize.ForeColor = "White"
 
 $btnOptimize.Add_Click({
-    Create-RestorePoint
     Clean-TempFiles
     Enable-UltimatePerformance
     Optimize-VisualEffects
@@ -77,5 +65,4 @@ $btnOptimize.Add_Click({
 })
 
 $form.Controls.Add($btnOptimize)
-
 $form.ShowDialog()
